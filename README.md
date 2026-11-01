@@ -1,6 +1,6 @@
-# latextab
+# textab
 
-**Latextab for Stata, based on esttab and collect.**
+**textab for Stata, based on esttab and collect.**
 
 Stata → LaTeX 三线表自动生成工具。在 Stata 里一条命令生成符合学术论文规范（booktabs 三线表）的 LaTeX 表格，用于 `\input` 进论文或独立编译预览。
 
@@ -8,14 +8,14 @@ Stata → LaTeX 三线表自动生成工具。在 Stata 里一条命令生成符
 
 ## 特性
 
-- **一条命令出表**：`latextab` 覆盖交叉表（tab）、描述统计（stat）、多级分组表（table）、回归结果表（reg）、变量定义表（list）五种需求。
+- **一条命令出表**：`textab` 覆盖交叉表（tab）、描述统计（stat）、多级分组表（table）、回归结果表（reg）、变量定义表（list）五种需求。
 - **包装成熟命令**：回归表包装 `esttab`（读已存估计、t 分布星号），交叉/描述/分组表包装 `collect`（原生多级表头 + 小计），星号、分组全由成熟命令给出，不自己算。
 - **统一三线表**：`retex.py` 把 esttab/collect 的原始 tex 换成 thuthesis booktabs 三线表（`\toprule`/`\midrule`/`\bottomrule`，去竖线）。
 - **两种形态**：`mode(input)` 出纯片段（`\input` 进论文），`mode(independ)` 出完整文档（自带导言区，可独立编译预览）；`orientation(landscape)` 出横向宽表。
 
 ## 系统要求
 
-- Stata 17+（`collect` 从 17 引入；`latextab.ado` 声明 `version 19.0`）
+- Stata 17+（`collect` 从 17 引入；`textab.ado` 声明 `version 17.0`）
 - Python ≥3.10，需装 `jinja2`
 - LaTeX 发行版（xelatex，中文依赖 xelatex）
 
@@ -27,51 +27,49 @@ Stata → LaTeX 三线表自动生成工具。在 Stata 里一条命令生成符
 pip install -r config/requirements.txt
 ```
 
-### 2. Stata 配置
+### 2. 安装
 
-在 Stata 里，先 `cd` 到本仓库根目录，再运行安装入口（定义全局宏 + 加入搜索路径）：
+把仓库放到本地后，把 `ado/` 目录加入 Stata 搜索路径即可（`textab` 会自动定位 `code_py/` 与 `templates/`，并识别 Python，无需手动配置）：
 
 ```stata
-cd "本仓库路径"          // code_py/ 与 ado/ 所在目录
-do doado_latextab.do
+adopath + "F:/.tools/textab/ado"   // 换成你的实际路径
 ```
 
-安装入口会自动把 `ado/` 加入 `adopath`，并用当前目录推导工具根目录。若你的 `python` 不在 PATH，编辑 `doado_latextab.do` 里 `LATEXTAB_PYTHON` 为完整路径。
-
-检查：
+检查依赖（自动检测 esttab、Python、jinja2 是否就位）：
 
 ```stata
-which latextab
+which textab
+textab env
 ```
 
 ## 用法
 
 ```stata
 * 交叉表（频数/百分比）
-latextab tab 行变量 列变量 using 输出.tex, caption("表题") label("章-序号") mode(input)
+textab tab 行变量 列变量 using 输出.tex, caption("表题") label("章-序号") mode(input)
 
 * 描述统计
-latextab stat 变量1 变量2, statistic(mean sd min max n)
+textab stat 变量1 变量2, statistic(mean sd min max n)
 
 * 多级分组表
-latextab table (行1 行2) (列1 列2), statistic(mean)
+textab table (行1 行2) (列1 列2), statistic(mean)
 
 * 回归结果表（先 estimates store）
-latextab reg est1 est2 using 输出.tex, caption("表题") label("章-序号")
+textab reg est1 est2 using 输出.tex, caption("表题") label("章-序号")
 
 * 变量定义表
-latextab list 变量1 变量2, caption("表题") label("章-序号")
+textab list 变量1 变量2, caption("表题") label("章-序号")
 ```
 
-常用选项：`mode(input|independ)`（片段/独立编译）、`orientation(portrait|landscape)`（纵向/横向）、`caption()`（表题）、`label()`（标签，自动加 `tab:` 前缀）。
+常用选项：`mode(input|independ)`（片段/独立编译）、`orientation(portrait|landscape)`（纵向/横向）、`caption()`（表题）、`label()`（标签，自动加 `tab:` 前缀）、`lang(en|zh)`（表格文本语言，仅 tab/stat/table）。
 
-更多见 `examples/latextab_examples.do`。
+更多见 `examples/textab_examples.do` 与 `help textab`。
 
 ## 目录结构
 
 | 路径 | 作用 |
-|---|---|
-| `ado/` | Stata 命令：`latextab.ado` + `_latextab_*.ado` + `latextab.sthlp` + `doado_latextab.do` |
+| --- | --- |
+| `ado/` | Stata 命令：`textab.ado` + `_textab_*.ado` + `textab.sthlp` |
 | `code_py/` | Python：`retex.py`（换表头）+ `json2tex.py`（Jinja2 渲染） |
 | `templates/` | LaTeX 模板：body 片段 + `_preamble.tex` 共享导言区 |
 | `config/` | `config.json` + `requirements.txt` |

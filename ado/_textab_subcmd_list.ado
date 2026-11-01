@@ -1,15 +1,15 @@
 *==============================================================================*
 **#1					【子程序：list 变量定义/编码表】
 *==============================================================================*
-capture program drop _latextab_list
+capture program drop _textab_subcmd_list
 //////////////////////////////////【程序目标】//////////////////////////////////
 * - 变量定义/编码表：变量名 + 口径(变量标签) + 定义与编码(值标签)
 * - 输出到 02_变量定义表.tex 模板（rows 为 {varname, scope, definition}）
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_list
-	version 19.0
+program define _textab_subcmd_list
+	version 17.0
 	syntax varlist(min=1) [using/], 		/// 变量列表：需要定义的变量
-		ROOT(string) SCRIPT(string) PYTHON(string)  /// 主程序公共路径，自动传入
+		ROOT(string) SCRIPT(string) PYTHON(string)	/// 根目录 + json2tex.py + python（主程序传入）
 		[									/// 【可选】
 		CAPtion(string) 					/// 【必选】表题
 		LABel(string) 						/// 【必选】标签
@@ -23,16 +23,11 @@ program define _latextab_list
 *==============================================================================*
 **#2						【参数设置：公共与特殊】
 *==============================================================================*
-	_latextab_set_defaults, 			///
+	_textab_util_set_defaults, 			///
 		type("list") mode("`mode'") 	///
 		caption(`"`caption'"') using("`using'") label("`label'")
 *【公共工具程序：文件名覆盖】
-	if "`replace'" == "" {
-		_latextab_check_file "`using'"
-	}
-	else {
-		_latextab_check_file "`using'", replace
-	}
+	_textab_util_check_file "`using'", `replace'
 *【模板默认值】
 	if "`template'" == "" | "`template'" == "auto" {
 		local template "02_变量定义表.tex"
@@ -98,7 +93,7 @@ program define _latextab_list
 	file close js
 
 //////////////////【公共工具程序：调用 Python 引擎与结果反馈】//////////////////
-	_latextab_finish, ///
+	_textab_util_finish, ///
 		script("`script'") using("`using'") python("`python'") ///
 		jsonfile("`jsonfile'") jsonkeep("`jsonkeep'")
 

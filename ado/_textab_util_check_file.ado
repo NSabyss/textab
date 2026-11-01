@@ -1,10 +1,10 @@
 *==============================================================================*
 **#	 					【公共工具程序：文件名与覆盖处理】
 *==============================================================================*
-capture program drop _latextab_check_file
+capture program drop _textab_util_check_file
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_check_file
-    syntax anything(name=filename), [REPLACE]
+program define _textab_util_check_file
+	syntax anything(name=filename), [REPLACE]
 	* 0. 去掉 anything 捕获到的外层引号（调用方用引号包裹文件名传入）
 	local filename = `filename'
 	* 1. 确保带有 .tex 后缀

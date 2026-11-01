@@ -1,9 +1,9 @@
 *==============================================================================*
 **#						【公共工具程序：公共参数默认值】
 *==============================================================================*
-capture program drop _latextab_set_defaults
+capture program drop _textab_util_set_defaults
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_set_defaults
+program define _textab_util_set_defaults
     syntax, ///
 	type(string) 									///	必选：子程序名
 	[												///	可选

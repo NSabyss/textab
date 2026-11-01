@@ -13,6 +13,7 @@
 #   mode        independ（套导言区 + 文档壳，可独立编译）/ input（只出片段，交论文 \input）
 #   orientation portrait（纵向）/ landscape（横向，包 \begin{landscape}）
 #   note        可选：表注（放在 \end{table} 之后）
+#   lang        可选："zh" 时把 tabular 内的 "Total" 换 "合计"（其余取值不动）
 # ==============================================================================
 
 import json
@@ -52,6 +53,14 @@ def _extract_tabular(raw, source):
 # ----------------------------------------------------------------------------
 # 2. 换表头：collect 的 | 竖线 + \cline 边框 → booktabs 三线
 # ----------------------------------------------------------------------------
+def _localize(block, lang):
+    """lang == "zh" 时，把 tabular 内的 "Total" 替换为 "合计"。
+    其余取值原样返回。"""
+    if lang == "zh":
+        return block.replace("Total", "合计")
+    return block
+
+
 def _reheader_collect(block):
     """把 collect 默认的 | 竖线去掉，把 \cline{1-N} 换成
     第一条 \toprule、最后一条 \bottomrule、中间 \midrule。"""
@@ -120,6 +129,7 @@ orientation = CFG.get("orientation", "portrait")
 tabular, need_reheader = _extract_tabular(raw, source)
 if need_reheader:
     tabular = _reheader_collect(tabular)
+tabular = _localize(tabular, CFG.get("lang", ""))
 
 body = _wrap_table(tabular, CFG)
 

@@ -19,3 +19,6 @@ tmp_json/
 # 本机开发配置
 .vscode/
 .latexmkrc
+
+# Stata 临时/交换文件
+*.stswp

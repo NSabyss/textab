@@ -2,16 +2,16 @@
 
 ## 目录
 
-- [一、latextab：自动化输出表格tex的代码实现方案](#一latextab自动化输出表格tex的代码实现方案)
-  - [【1】实现方案：Stata ado + JSON + Jinja2 + LaTeX template](#1实现方案stata-ado--json--jinja2--latex-template)
+- [一、textab：自动化输出表格tex的代码实现方案](#一textab自动化输出表格tex的代码实现方案)
+  - [【1】实现方案：包装 esttab / collect 生成 tex，再换表头统一三线表](#1实现方案包装-esttab--collect-生成-tex再换表头统一三线表)
   - [【2】实现流程](#2实现流程)
   - [【3】具体实现方法](#3具体实现方法)
     - [第一步：整理文件结构](#第一步整理文件结构)
     - [第二步：安装所需命令包](#第二步安装所需命令包)
     - [第三步：整理生成latex表格模板](#第三步整理生成latex表格模板)
       - [（1）表格需求清单](#1表格需求清单)
-      - [（2）具体模板](#2具体模板)
-- [二、如何快速配置环境以使用latextab包](#二如何快速配置环境以使用latextab包)
+      - [（2）模板文件结构](#2模板文件结构)
+- [二、如何快速配置环境以使用textab包](#二如何快速配置环境以使用textab包)
   - [【1】系统要求](#1系统要求)
   - [【2】Python配置](#2python配置)
     - [第一步：安装Python](#第一步安装python)
@@ -24,12 +24,12 @@
 
 ---
 <a id="sec-1"></a>
-# 一、latextab：自动化输出表格tex的代码实现方案
+# 一、textab：自动化输出表格tex的代码实现方案
 <a id="sec-1-1"></a>
 ## 【1】实现方案：包装 esttab / collect 生成 tex，再换表头统一三线表
 <a id="sec-1-2"></a>
 ## 【2】实现流程
-      Stata：latextab（5 个子命令：reg 回归 / stat 描述 / tab 交叉 / table 多级 / list 定义）
+      Stata：textab（5 个子命令：reg 回归 / stat 描述 / tab 交叉 / table 多级 / list 定义）
                 ├─ reg           → 包装 esttab（读已存估计，t 分布星号）→ 原始 tex
                 ├─ tab/stat/table → 包装 table（collect 框架，多级表头 + 小计）→ collect export tex
                 └─ list          → json2tex.py + Jinja2 模板（保留，无 collect 等价）
@@ -46,7 +46,7 @@
 <a id="sec-1-3"></a>
 ## 【3】具体实现方法
 ### 第一步：整理文件结构
-    root(根目录示例F:\\.tools\latextab)
+    root(根目录示例F:\\.tools\textab)
     │
     ├── setup                   # 安装说明
     ├── .latexmkrc              # latexmk 编译路由（PDF 统一输出到 tmp_pdf/）
@@ -67,13 +67,13 @@
     └── tmp_tex\                # 编译预览的 tex
 
     其他相关路径：
-    ado/                            # Stata 命令：latextab.ado（主路由）+ _latextab_*.ado（子程序）
-                                    # + doado_latextab.do（安装入口）+ latextab.sthlp（帮助）
+    ado/                            # Stata 命令：textab.ado（主路由）+ _textab_*.ado（子程序）+ textab.sthlp（帮助）
 ### 第二步：安装所需命令包
     stata：
         reg 子命令需装 estout（提供 esttab）：ssc install estout, replace
         tab/stat/table 用的 table（collect 框架）为 Stata 17+ 内置，无需安装
-    python：终端运行 pip install jinja2
+    python：
+        终端运行 pip install jinja2
 ### 第三步：整理生成latex表格模板
 #### （1）表格需求清单
 | 论文表格需求 | 对应表格类型 | 对应 Stata 命令 | 对应模板要求 |
@@ -85,14 +85,21 @@
 | **回归结果展示** | 回归分析结果表 | `regress` / `xtreg` / `esttab` / `outreg2` / `etable` | **三线表**。汇报核心回归系数，系数下方括号内为标准误（或 t 值/p 值），使用 \*、\*\*、\*\*\* 标明显著性水平；底部注明是否控制个体/时间固定效应、样本量及 R 方。 |
 
 #### （2）模板文件结构
-
+    模板文件储存路径：
+        F:\.tools\textab\templates
+    导言区：
+        F:\.tools\textab\templates\_preamble.tex
+    使用说明：
+        表格分成两部分：body 片段（01~06_*.tex，具体表格骨架）+ 共享导言区（_preamble.tex，\documentclass 与宏包）。
+        6 个 body 模板对应不同表格类型（三线表 / 变量定义 / 回归 / 多面板 / 横向宽表 / 跨行分组），导言区共用一份。
+        通过 mode 参数切换两种形态：input（只出 body，交给论文 \input）与 independ（导言区+文档壳+body，可单独编译），默认 independ。
 
 [返回顶部](#top)
 
 ---
 
 <a id="sec-2"></a>
-# 二、如何快速配置环境以使用latextab包
+# 二、如何快速配置环境以使用textab包
 
     考虑之后做一个install包，点击自动配置环境
 
@@ -120,7 +127,7 @@
 
 【进入工具目录】
 
-    cd latextab
+    cd textab
 
 
 【创建】
@@ -140,19 +147,17 @@
 <a id="sec-2-3"></a>
 ## 【3】Stata配置
 
-【运行一次安装入口（定义全局宏 + 加入搜索路径）】
+【把 ado/ 加入搜索路径即可（无需 do 安装入口、无需改全局宏）】
 
-    cd "仓库根目录"                 // code_py/ 与 ado/ 所在目录
-    do doado_latextab.do
+    adopath + "仓库根目录/ado"
 
-【换机器 / 换目录时，本文件基本无需改动（root/ado 自动取当前目录）；】
-【仅当 python 不在 PATH 时，改 LATEXTAB_PYTHON 为完整路径。】
-LATEXTAB_ROOT（工具根目录）、LATEXTAB_PYTHON（Python 解释器）、
-LATEXTAB_ADO（ado 目录），无需改任何 .ado。
+textab 会自动定位 code_py/ 与 templates/，并识别 Python
+（默认走 PATH；环境未就绪时可用 textab env 检测并手动输入路径），换机器 / 换目录无需改动。
 
-【检查】
+【检查依赖】
 
-    which latextab
+    which textab
+    textab env
 
 <a id="sec-2-4"></a>
 ## 【4】测试
@@ -176,9 +181,9 @@ PDF 统一输出到 tmp_pdf/ 目录（靠 .latexmkrc 条件路由），中间文
 <a id="sec-3"></a>
 # 三、如何更新 GitHub 仓库
 
-仓库地址：https://github.com/NSabyss/latextab
+仓库地址：https://github.com/NSabyss/textab
 
-本地改完代码后，在 `F:\.tools\latextab` 目录下，走三步：
+本地改完代码后，在 `F:\.tools\textab` 目录下，走三步：
 
 【1】暂存改动
 
@@ -195,8 +200,8 @@ PDF 统一输出到 tmp_pdf/ 目录（靠 .latexmkrc 条件路由），中间文
 改动即同步到远程仓库。常用补充：
 
 - `git status`：随时查看当前有哪些改动（改没改、改了哪些文件）。
-- 只提交部分文件：把 `git add -A` 换成 `git add <文件名>`（如 `git add ado/latextab.ado`），再 commit + push。
+- 只提交部分文件：把 `git add -A` 换成 `git add <文件名>`（如 `git add ado/textab.ado`），再 commit + push。
 - commit 信息建议：`fix: 修复 xxx` / `feat: 新增 xxx`，方便以后翻历史。
-- 若本地改了 `doado_latextab.do` 里的 `LATEXTAB_PYTHON`，不要 add 进去，远程保留通用的 `"python"` 默认值。
+- 仓库里的路径都靠 `textab.ado` 自动探测，无需在版本库里写死本机路径（`python` 优先走 PATH）。
 
 [返回顶部](#top)

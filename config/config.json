@@ -1,5 +1,5 @@
 {
-    "name": "latextab",
+    "name": "textab",
     "version": "0.3.0",
 
     "description": "Stata to LaTeX automatic table system",

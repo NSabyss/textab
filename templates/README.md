@@ -1,4 +1,4 @@
-# latextab 表格自动化工具
+# textab 表格自动化工具
 
 Stata → LaTeX 三线表自动生成工具。核心分工一句话：
 
@@ -12,7 +12,7 @@ Stata → LaTeX 三线表自动生成工具。核心分工一句话：
 
 把「数据」和「排版」彻底分离，各管各的：
 
-1. **Stata（`latextab.ado`）**：负责统计（`tabulate` 交叉表、回归等），把结果写成一份 JSON（纯数据）。
+1. **Stata（`textab.ado`）**：负责统计（`tabulate` 交叉表、回归等），把结果写成一份 JSON（纯数据）。
 2. **Python（`code_py/json2tex.py` + Jinja2）**：读 JSON，按指定模板把数据填进三线表骨架，渲染成 `.tex`。
 3. **LaTeX（xelatex）**：把 `.tex` 编译成 PDF。
 
@@ -24,7 +24,7 @@ Stata → LaTeX 三线表自动生成工具。核心分工一句话：
 ### 数据流
 
 ```
-Stata: latextab tab ...              →  tmp_json/table.json
+Stata: textab tab ...              →  tmp_json/table.json
 Python: json2tex.py table.json 输出.tex  →  生成的 .tex
 xelatex / VS Code 绿色三角           →  PDF
 ```
@@ -42,7 +42,7 @@ xelatex / VS Code 绿色三角           →  PDF
 
 | 路径 | 作用 |
 |---|---|
-| `ado/` | Stata 命令：`latextab.ado`（主程序）+ `_latextab_*.ado`（子程序）+ `latextab.sthlp` + `doado_latextab.do`（安装入口） |
+| `ado/` | Stata 命令：`textab.ado`（主程序）+ `_textab_*.ado`（子程序）+ `textab.sthlp` |
 | `code_py/retex.py` | 换表头：esttab/collect 原始 tex → booktabs 三线表 |
 | `code_py/json2tex.py` | Jinja2 渲染：JSON + 模板 → `.tex`（list 子命令用） |
 | `templates/` | 模板目录：`01~06_*.tex` body 片段 + `_preamble.tex` 共享导言区 |
@@ -89,7 +89,7 @@ xelatex / VS Code 绿色三角           →  PDF
 ### 1. 在 Stata 里生成表格
 
 ```stata
-latextab tab 行变量 列变量 using 输出.tex, ///
+textab tab 行变量 列变量 using 输出.tex, ///
     caption("表题") label("章-序号")     ///
     mode(input) template("01_基础三线表.tex") replace
 ```
@@ -106,7 +106,7 @@ latextab tab 行变量 列变量 using 输出.tex, ///
 
 ### 2. 编译成 PDF
 
-> 关键：模板是 **jinja2 模板**（含 `{{ caption }}`、`{% for %}` 等占位符），**不能直接 xelatex 编译**。必须先经 `latextab` / `json2tex.py` 渲染成真实数据，再编译。
+> 关键：模板是 **jinja2 模板**（含 `{{ caption }}`、`{% for %}` 等占位符），**不能直接 xelatex 编译**。必须先经 `textab` / `json2tex.py` 渲染成真实数据，再编译。
 
 - **独立预览**：用 `mode(independ)` 生成完整文档后，点 VS Code 右上角绿色三角（latexmk + xelatex），PDF 生成在 `.tex` 同目录，中间文件进 `build/` 子文件夹。
 - **手动编译**：`xelatex -interaction=nonstopmode 输出.tex`（必须 xelatex，ctexart 中文依赖 xelatex）。
@@ -126,18 +126,18 @@ latextab tab 行变量 列变量 using 输出.tex, ///
 
 ### PDF 统一输出到 tmp_pdf
 
-`F:\.tools\latextab` 下所有 `.tex` 编译后，PDF 会自动落到 `F:\.tools\latextab\tmp_pdf`，而不是 `.tex` 旁边；论文（`F:\project\...`）仍原地出 PDF，不受影响。
+`F:\.tools\textab` 下所有 `.tex` 编译后，PDF 会自动落到 `F:\.tools\textab\tmp_pdf`，而不是 `.tex` 旁边；论文（`F:\project\...`）仍原地出 PDF，不受影响。
 
 实现是「条件路由」，两个文件配合：
 
-1. `f:\.vscode\settings.json` 里 `xelatexmk` / `lualatexmk` 两个 latexmk 工具加了 `-r "F:/.tools/latextab/.latexmkrc"`，让每次 latexmk 编译都加载这个 rc 文件。
-2. `F:\.tools\latextab\.latexmkrc` 判断「当前编译目录」（= 被编译 `.tex` 所在目录）是否在 latextab 树下：是则把 `$out_dir` 设为 tmp_pdf，否则什么都不做。
+1. `f:\.vscode\settings.json` 里 `xelatexmk` / `lualatexmk` 两个 latexmk 工具加了 `-r "F:/.tools/textab/.latexmkrc"`，让每次 latexmk 编译都加载这个 rc 文件。
+2. `F:\.tools\textab\.latexmkrc` 判断「当前编译目录」（= 被编译 `.tex` 所在目录）是否在 textab 树下：是则把 `$out_dir` 设为 tmp_pdf，否则什么都不做。
 
 ```perl
 use Cwd;
 my $cwd = Cwd::cwd();
-if ($cwd =~ /F:[\/\\]\.tools[\/\\]latextab([\/\\]|$)/i) {
-    $out_dir = 'F:/.tools/latextab/tmp_pdf';
+if ($cwd =~ /F:[\/\\]\.tools[\/\\]textab([\/\\]|$)/i) {
+    $out_dir = 'F:/.tools/textab/tmp_pdf';
 }
 ```
 

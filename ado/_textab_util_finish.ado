@@ -1,9 +1,9 @@
 *==============================================================================*
 **#                     【公共工具程序：收尾与Python调用】
 *==============================================================================*
-capture program drop _latextab_finish
+capture program drop _textab_util_finish
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_finish
+program define _textab_util_finish
     syntax, script(string) using(string) python(string) ///
 	[jsonfile(string) jsonkeep(string)]
 

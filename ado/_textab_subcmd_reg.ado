@@ -1,16 +1,16 @@
 *==============================================================================*
 **#1					【子程序：regression 回归结果表（esttab 薄包装）】
 *==============================================================================*
-capture program drop _latextab_reg
+capture program drop _textab_subcmd_reg
 //////////////////////////////////【程序目标】//////////////////////////////////
 * - 线性回归结果表：系数 + 标准误(括号) + 显著性星号 + N / R²
 * - 直接封装 esttab：读已存估计、t 分布星号、booktabs 三线表全由 esttab 原生给出
 * - estnames 为空时 esttab 自动读当前 e()（最近一次回归），无需手工重跑
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_reg
-	version 19.0
+program define _textab_subcmd_reg
+	version 17.0
 	syntax [anything(name=estnames)] [using/] , /// 估计名列表（estimates store 的 names），可空=当前 e()
-		PYTHON(string) RETEX(string)					/// 主程序公共路径，自动传入
+		ROOT(string) RETEX(string) PYTHON(string)	/// 根目录 + retex.py + python（主程序传入）
 		[											/// 【可选】
 		CAPtion(string) 							/// 表题
 		LABel(string) 								/// 标签(交叉引用)
@@ -25,16 +25,11 @@ program define _latextab_reg
 **#2						【参数设置：公共与特殊】
 *==============================================================================*
 //////////////////////【公共工具程序：默认值与文件名处理】//////////////////////
-	_latextab_set_defaults, 			/// 必须先定 base 和 using
+	_textab_util_set_defaults, 			/// 必须先定 base 和 using
 		type("reg") mode("`mode'") 		/// cap > using > lab 名称优先级
 		caption(`"`caption'"') using("`using'") label("`label'") orientation("`orientation'")
 *【公共工具程序：文件名覆盖】
-	if "`replace'" == "" {
-		_latextab_check_file "`using'"
-	}
-	else {
-		_latextab_check_file "`using'", replace
-	}
+	_textab_util_check_file "`using'", `replace'
 *【表注默认值】
 	if `"`note'"' == "" {
 		local note "注：$^{*}p<0.05$，$^{**}p<0.01$，$^{***}p<0.001$；括号内为标准误。"
@@ -58,7 +53,7 @@ program define _latextab_reg
 *==============================================================================*
 **#4						【retex 换表头 + 套壳】
 *==============================================================================*
-	_latextab_retex, using("`using'") python("`python'") retex("`retex'") raw("`raw'") ///
+	_textab_util_retex, using("`using'") python("`python'") retex("`retex'") raw("`raw'") ///
 		source("esttab") mode("`mode'") orientation("`orientation'") ///
 		caption(`"`caption'"') label("`label'") note(`"`note'"') jsonkeep("`jsonkeep'")
 

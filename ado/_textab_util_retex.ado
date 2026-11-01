@@ -1,18 +1,19 @@
 *==============================================================================*
 **#					【公共工具程序：retex 换表头 + 渲染收尾】
 *==============================================================================*
-capture program drop _latextab_retex
+capture program drop _textab_util_retex
 //////////////////////////////////【程序目标】//////////////////////////////////
 * - 写 retex.py 所需的配置 JSON，调 Python 把 esttab/collect 的原始 tex
 *   换成 thuthesis booktabs 三线表（去 | 竖线、\cline 换 \toprule/\midrule/\bottomrule），
 *   再按 mode(独立编译/片段) × orientation(纵向/横向) 两层套壳
-* - 与 _latextab_finish 并列：_latextab_finish 走 json2tex.py(Jinja2 模板)，
+* - 与 _textab_util_finish 并列：_textab_util_finish 走 json2tex.py(Jinja2 模板)，
 *   本程序走 retex.py(换表头)，二者都是「写中间文件 → 调 Python → 清理」
 //////////////////////////////////【程序语法】//////////////////////////////////
-program define _latextab_retex
+program define _textab_util_retex
 	syntax, using(string) python(string) retex(string) raw(string)	/// 原始 tex 与工具路径
 		source(string) mode(string) orientation(string)				/// 来源/模式/方向
-		[caption(string) label(string) note(string) jsonkeep(string)]	/// 表题/标签/表注/清理开关
+		[caption(string) label(string) note(string) jsonkeep(string)	/// 表题/标签/表注/清理开关
+		lang(string)]												/// 语言 en/zh（zh 时 Total→合计）
 
 ////////////////////////////////【程序定义】////////////////////////////////
 	* 0. 路径统一正斜杠，供 JSON 与 Python 使用
@@ -30,6 +31,7 @@ program define _latextab_retex
 	file write js `"  "orientation": "`orientation'", "' _n
 	file write js `"  "caption": "`caption'", "' _n
 	file write js `"  "label": "`label'", "' _n
+	file write js `"  "lang": "`lang'", "' _n
 	file write js `"  "note": "`note'""' _n
 	file write js "}" _n
 	file close js
