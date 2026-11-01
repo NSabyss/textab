@@ -6,13 +6,13 @@
 //////////////////////////////////【程序结构】//////////////////////////////////
 * Stata -> esttab/collect -> tex -> retex换表头 -> LaTeX 三线表
 //////////////////////////////////【运行环境】//////////////////////////////////
-//	依赖：esttab（reg 用）、python + jinja2（list 用）、collect（Stata 17+ 自带）
+//	依赖：esttab（est 回归类用）、python + jinja2（list 用）、collect（Stata 17+ 自带）
 //	主程序定位根目录 + 派生脚本/Python 地址，一并传给子命令；env 单独查环境
 //	环境依赖详见 help textab；运行报错先执行 textab env 排查
 //////////////////////////////////【程序预备】//////////////////////////////////
 * 预删除防重复
 capture program drop textab
-* textab v0.3.0                                  	//  程序包版本
+* textab v0.4.0                                  	//  程序包版本
 *==============================================================================*
 **#2					【主程序：路由分发器】
 *==============================================================================*
@@ -47,8 +47,12 @@ program define textab                             //  开始定义程序
 	else if "`subcmd'" == "list" {
 		_textab_subcmd_list `0' root(`"`root'"') script(`"`script'"') python(`"`python'"')
 	}
+	else if "`subcmd'" == "est" {
+		_textab_subcmd_est `0' root(`"`root'"') retex(`"`retex'"') python(`"`python'"')
+	}
 	else if "`subcmd'" == "reg" {
-		_textab_subcmd_reg `0' root(`"`root'"') retex(`"`retex'"') python(`"`python'"')
+		di as error "textab reg 已更名为 textab est，请改用：textab est ..."
+		exit 198
 	}
 	else {
 		di as error "subcommand `subcmd' not found. Please check help textab."

@@ -3,7 +3,7 @@
 *==============================================================================*
 * 运行前需已安装 textab（见 setup / textab.sthlp 的 Installation）：
 *   把 ado/ 加入 adopath 即可，textab 会自动定位 code_py/ 与 templates/。
-* 本脚本用自带 auto 数据演示，输出 8 张表格到当前目录。
+* 本脚本用自带 auto 数据演示，输出 12 张表格到当前目录。
 
 set more off
 
@@ -15,14 +15,49 @@ textab env
 sysuse auto, clear
 
 *------------------------------------------------------------------------------
-* 1. reg：回归结果表（读已存估计，t 分布星号，括号内标准误 + N + R²）
+* 1. est：回归结果表（读已存估计，t 分布星号，括号内标准误 + N + R²）
 *------------------------------------------------------------------------------
 regress price mpg weight
 estimates store m1
 regress price mpg weight length
 estimates store m2
-textab reg m1 m2 using 01_reg.tex, ///
+textab est m1 m2 using 01_reg.tex, ///
     caption("线性回归结果") label(reg) mode(input)
+
+*------------------------------------------------------------------------------
+* 1b. est：logit / 固定效应（自定义统计量 stats()）
+*------------------------------------------------------------------------------
+logit foreign mpg weight
+textab est using 01b_logit.tex, ///
+    caption("Logit") label(logit) mode(input) stats(N chi2 p)
+
+* 固定效应需要面板数据：用 auto 构造 100 个体 × 5 期的简单面板
+set seed 1234
+set obs 100
+gen id = _n
+gen a_i = rnormal(0, 5)
+expand 5
+bysort id: gen year = _n
+gen x1 = rnormal(0, 3) + a_i*0.3
+gen x2 = rnormal(0, 2)
+gen e  = rnormal(0, 10)
+gen y  = 2*x1 - 1.5*x2 + a_i + e
+xtset id year
+xtreg y x1 x2, fe
+textab est using 01c_fe.tex, ///
+    caption("固定效应") label(fe) mode(input)
+
+* 恢复 auto 数据，供后续 SEM / stat / tab 示例使用
+sysuse auto, clear
+
+*------------------------------------------------------------------------------
+* 1c. est：结构方程模型（自动读 e(b)/e(V)，附拟合指标；variance 显示误差方差）
+*------------------------------------------------------------------------------
+sem (price <- mpg weight) (mpg <- weight)
+textab est using 01d_sem.tex, ///
+    caption("结构方程模型") label(sem) mode(input)
+textab est using 01e_semvar.tex, ///
+    caption("结构方程(含方差)") label(semvar) mode(input) variance
 
 *------------------------------------------------------------------------------
 * 2. stat：描述统计（行=统计量，列=变量）

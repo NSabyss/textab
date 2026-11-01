@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.3.0  20oct2026}{...}
+{* *! version 0.4.0  01nov2026}{...}
 {viewerjumpto "syntax" "Syntax"}{...}
 {viewerjumpto "description" "Description"}{...}
 {viewerjumpto "options" "Options"}{...}
@@ -9,13 +9,13 @@
 {title:textab — Stata 表格转 LaTeX 三线表}
 
 {pstd}
-{cmd:textab} 把 Stata 的统计结果（回归、频数/交叉表、描述统计、变量定义表）
+{cmd:textab} 把 Stata 的统计结果（回归/固定效应/结构方程、频数/交叉表、描述统计、变量定义表）
 直接输出成 {cmd:booktabs} 三线表 LaTeX 片段，可直接 {cmd:\input} 进 thuthesis 论文，
 也可独立编译预览。
 
 {pstd}
 底层不手写表格，而是薄包装两个成熟命令：
-{cmd:reg} 包 {help esttab}（读已存估计、t 分布星号），
+{cmd:est} 回归类包 {help esttab}（读已存估计、t 分布星号），SEM 直接读 e(b)/e(V) 排版，
 {cmd:tab}/{cmd:stat}/{cmd:table} 包 {help table}（多级行列表头 + 小计），
 导出原始 tex 后再经 retex.py 换表头统一成三线表。
 
@@ -23,10 +23,11 @@
 {title:Syntax}
 
 {p 8 16 2}
-{cmd:textab} {cmd:reg} [{it:estnames}] [using {it:filename}] {cmd:,}
+{cmd:textab} {cmd:est} [{it:estnames}] [using {it:filename}] {cmd:,}
 [{opth caption:(string)} {opth label:(string)}
 {opt mode(independ|input)} {opt orientation(portrait|landscape)}
-{opth models:(string)} {opth note:(string)} {opt replace}]
+{opth models:(string)} {opth note:(string)} {opth stats:(string)}
+{opt replace} {opt variance}]
 
 {p 8 16 2}
 {cmd:textab} {cmd:tab} {it:varlist} [{cmd:min=1 max=2}] [using {it:filename}] {cmd:,}
@@ -54,9 +55,11 @@
 {title:Description}
 
 {pstd}
-{cmd:textab reg} 输出线性回归结果表：系数 + 括号内标准误 + 显著性星号
-（t 分布，* p<0.05 / ** p<0.01 / *** p<0.001）+ 样本量 N + R{superscript:2}。
-{it:estnames} 为 {cmd:estimates store} 存的估计名；省略时用最近一次回归的 {cmd:e()}。
+{cmd:textab est} 按 {cmd:e(cmd)} 自动分流，统一输出「系数 + 括号内标准误 + 显著性星号」三线表：
+回归类（{cmd:regress}/{cmd:xtreg,fe}/{cmd:reghdfe}/{cmd:logit} 等）包 {help esttab}，
+默认报告样本量 N + R{superscript:2}；结构方程模型（{cmd:sem}/{cmd:gsem}）则直接读
+{cmd:e(b)}/{cmd:e(V)} 排版，按内生变量分块，底部附拟合指标（N、χ{superscript:2}、df、RMSEA、CFI、TLI、SRMR）。
+{it:estnames} 为 {cmd:estimates store} 存的估计名；省略时用最近一次估计的 {cmd:e()}。
 
 {pstd}
 {cmd:textab tab} 输出一维频数表或二维交叉表（含行列 Total 小计）。
@@ -100,8 +103,10 @@
 各子命令专属选项：
 
 {phang}
-{cmd:reg}：{opth models:(string)} 表头列名（映射 esttab 的 {cmd:mtitles()}）；
-{opth note:(string)} 表注（默认给出中文显著性说明）。
+{cmd:est}：{opth models:(string)} 表头列名（回归类映射 esttab 的 {cmd:mtitles()}，SEM 作列标题）；
+{opth note:(string)} 表注（默认给出中文显著性说明）；
+{opth stats:(string)} 回归类统计量（默认 {cmd:N r2}；logit 等用 {cmd:N chi2 p}）；
+{opt variance}（仅 SEM）显示误差方差 {cmd:var(e.xx)} 行，默认隐藏。
 
 {phang}
 {cmd:stat}：{opth statistic:(string)} 统计量列表（空格分隔，如
@@ -132,8 +137,8 @@ Python 默认走 PATH（{cmd:python}）；环境未就绪时先运行 {cmd:texta
 依赖（Dependencies）：
 {p 8 12 2}
 - Stata 17+（{cmd:table}/{cmd:collect} 需要）
-- Python >=3.10 + {cmd:jinja2}（{cmd:textab list} 需要；reg/tab/stat/table 只用标准库）
-- {cmd:esttab}（{cmd:textab reg} 需要，来自 {cmd:ssc install estout}）
+- Python >=3.10 + {cmd:jinja2}（{cmd:textab list} 需要；est/tab/stat/table 只用标准库）
+- {cmd:esttab}（{cmd:textab est} 回归类需要，来自 {cmd:ssc install estout}；SEM 不需要）
 - LaTeX 发行版（编译预览 PDF 用，仅 {cmd:mode(independ)} 需要）
 
 {pstd}
@@ -167,7 +172,18 @@ jinja2 用 {cmd:pip install jinja2}），全部就绪则提示 {cmd:All dependen
 {phang2}{cmd:. estimates store m1}
 {phang2}{cmd:. regress price mpg weight length}
 {phang2}{cmd:. estimates store m2}
-{phang2}{cmd:. textab reg m1 m2 using 01_reg.tex, caption("线性回归结果") label(reg)}
+{phang2}{cmd:. textab est m1 m2 using 01_reg.tex, caption("线性回归结果") label(reg)}
+
+{pstd}（1b）logit / 固定效应 —— 自定义统计量{p_end}
+{phang2}{cmd:. logit foreign mpg weight}
+{phang2}{cmd:. textab est using 01b_logit.tex, caption("Logit") label(logit) stats(N chi2 p)}
+{phang2}{cmd:. xtreg price mpg weight, fe}
+{phang2}{cmd:. textab est using 01c_fe.tex, caption("固定效应") label(fe)}
+
+{pstd}（1c）结构方程模型 —— 自动读 e(b)/e(V)，附拟合指标{p_end}
+{phang2}{cmd:. sem (price <- mpg weight) (mpg <- weight)}
+{phang2}{cmd:. textab est using 01d_sem.tex, caption("结构方程模型") label(sem)}
+{phang2}{cmd:. textab est using 01e_semvar.tex, caption("结构方程(含方差)") label(semvar) variance}
 
 {pstd}（2）描述统计 —— 行=统计量、列=变量{p_end}
 {phang2}{cmd:. textab stat price mpg weight using 02_stat.tex, statistic(mean sd min max n) caption("变量描述统计") label(stat)}

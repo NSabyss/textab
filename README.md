@@ -8,8 +8,8 @@ Stata → LaTeX 三线表自动生成工具。在 Stata 里一条命令生成符
 
 ## 特性
 
-- **一条命令出表**：`textab` 覆盖交叉表（tab）、描述统计（stat）、多级分组表（table）、回归结果表（reg）、变量定义表（list）五种需求。
-- **包装成熟命令**：回归表包装 `esttab`（读已存估计、t 分布星号），交叉/描述/分组表包装 `collect`（原生多级表头 + 小计），星号、分组全由成熟命令给出，不自己算。
+- **一条命令出表**：`textab` 覆盖交叉表（tab）、描述统计（stat）、多级分组表（table）、估计结果表（est，回归/固定效应/结构方程）、变量定义表（list）五种需求。
+- **包装成熟命令**：估计表回归类包装 `esttab`（读已存估计、t 分布星号）、SEM 直接读 `e(b)/e(V)` 排版，交叉/描述/分组表包装 `collect`（原生多级表头 + 小计），星号、分组全由成熟命令给出，不自己算。
 - **统一三线表**：`retex.py` 把 esttab/collect 的原始 tex 换成 thuthesis booktabs 三线表（`\toprule`/`\midrule`/`\bottomrule`，去竖线）。
 - **两种形态**：`mode(input)` 出纯片段（`\input` 进论文），`mode(independ)` 出完整文档（自带导言区，可独立编译预览）；`orientation(landscape)` 出横向宽表。
 
@@ -54,8 +54,12 @@ textab stat 变量1 变量2, statistic(mean sd min max n)
 * 多级分组表
 textab table (行1 行2) (列1 列2), statistic(mean)
 
-* 回归结果表（先 estimates store）
-textab reg est1 est2 using 输出.tex, caption("表题") label("章-序号")
+* 估计结果表（先 estimates store；regress/xtreg/logit/sem 均自动识别）
+textab est est1 est2 using 输出.tex, caption("表题") label("章-序号")
+
+* 结构方程模型（自动读 e(b)/e(V)，附拟合指标；加 variance 显示误差方差）
+sem (price <- mpg weight) (mpg <- weight)
+textab est using 输出_sem.tex, caption("结构方程模型") label("章-序号")
 
 * 变量定义表
 textab list 变量1 变量2, caption("表题") label("章-序号")
