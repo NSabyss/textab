@@ -45,7 +45,7 @@ xelatex / VS Code 绿色三角           →  PDF
 | `ado/` | Stata 命令：`textab.ado`（主程序）+ `_textab_*.ado`（子程序）+ `textab.sthlp` |
 | `code_py/retex.py` | 换表头：esttab/collect 原始 tex → booktabs 三线表 |
 | `code_py/json2tex.py` | Jinja2 渲染：JSON + 模板 → `.tex`（list 子命令用） |
-| `templates/` | 模板目录：`01~06_*.tex` body 片段 + `_preamble.tex` 共享导言区 |
+| `templates/` | 模板目录：`02/04/05/06_*.tex` body 片段 + `_preamble.tex` 共享导言区 |
 | `config/` | 配置：`config.json` + `requirements.txt` |
 | `examples/` | 示例：各子命令的 `.tex` / `.do` 样例 |
 | `tmp_json/` `tmp_tex/` `tmp_pdf/` | 中间产物：JSON / 生成的 tex / PDF（已 gitignore） |
@@ -56,7 +56,7 @@ xelatex / VS Code 绿色三角           →  PDF
 
 ### 模板只维护一份，导言区独立成段
 
-- **body 片段（`01~06_*.tex`）**：纯表格骨架（`\begin{table}...\end{table}` 或 `\begin{landscape}...`），含 Jinja2 占位符，无 `\documentclass`、不加载宏包。这是**唯一**的模板来源。
+- **body 片段（`02/04/05/06_*.tex`）**：纯表格骨架（`\begin{table}...\end{table}` 或 `\begin{landscape}...`），含 Jinja2 占位符，无 `\documentclass`、不加载宏包。这是**唯一**的模板来源。
 - **共享导言区（`_preamble.tex`）**：`\documentclass{ctexart}` + 全套宏包。`json2tex.py` 在 `mode=independ` 时自动把它套在 body 前，拼成完整文档。
 
 > 不再有 input/independ 两份同名模板。两种形态由 `mode` 切换：`input` 只出 body 片段（交给论文 `\input`，宏包由论文主文件 thusetup.tex 加载）；`independ` 出「导言区 + 文档壳 + body」，可单独编译预览。增删宏包只改 `_preamble.tex` 一处。
@@ -69,13 +69,13 @@ xelatex / VS Code 绿色三角           →  PDF
 - 表注：置于 `\end{table}` 之后的正文段落（非表格内）；显著性 `$^{*}p<0.05$，$^{**}p<0.01$，$^{***}p<0.001$`，标准误加括号 `( )`。
 - 依赖宏包：`booktabs`、`multirow`、`makecell`、`array`、`longtable`、`pdflscape`、`threeparttable`、`siunitx`。论文 thusetup.tex 已全部加载；`_preamble.tex` 已自带全套（`independ` 模式用）。
 
-### 模板索引（6 个）
+### 模板索引（4 个）
+
+> `01_基础三线表`、`03_回归结果表` 已删除：这两个能力现由 Stata 的 `collect`/`esttab` + `retex.py` 直接生成（`tab`/`stat`/`table`/`est` 子命令），不再走模板。模板只服务 `list` 与三个高级布局。
 
 | 模板 | 用途 | 关键结构 |
 |---|---|---|
-| `01_基础三线表` | 单 tabular 通用（频数/百分比/均值/描述统计）；可加二级表头 | table + 单 tabular（可选 `\multicolumn`+`\cmidrule` 二级表头） |
 | `02_变量定义表` | 变量名/口径/定义编码 | `p{}` 定宽列 + `\texttt{}` |
-| `03_回归结果表` | 系数 + 标准误（括号）+ N/R² | 括号标准误行 |
 | `04_多面板三线表` | 一个表内多个 tabular（面板 A/B/C） | 多 tabular + 面板循环 |
 | `05_横向宽表` | 超宽表横排整页；可跨页分组 | `landscape` + `longtable`（可选分组标题行） |
 | `06_跨行分组表` | 跨行合并分组 | `multirow` + `addlinespace` |
@@ -91,7 +91,7 @@ xelatex / VS Code 绿色三角           →  PDF
 ```stata
 textab tab 行变量 列变量 using 输出.tex, ///
     caption("表题") label("章-序号")     ///
-    mode(input) template("01_基础三线表.tex") replace
+    mode(input) replace
 ```
 
 参数说明：
@@ -101,7 +101,7 @@ textab tab 行变量 列变量 using 输出.tex, ///
 - `using()`：输出 `.tex` 的路径（必填）。
 - `caption()`：表题（必填）；`label()`：交叉引用标签（必填）。
 - `mode(input|independ)`：默认 `input`。
-- `template()`：模板文件名；不填则自动选（总列数 ≤7 用 `01_基础三线表`，否则 `05_横向宽表`）。
+- `template()`：仅 `list` 子命令用，模板文件名（默认 `02_变量定义表.tex`）；`tab`/`stat`/`table`/`est` 走 `retex.py`，不接受 `template()`。
 - `name()`：临时 JSON 名（默认 `table`）；`nototal`：不输出合计列；`replace`：覆盖已存在文件。
 
 ### 2. 编译成 PDF
@@ -126,20 +126,9 @@ textab tab 行变量 列变量 using 输出.tex, ///
 
 ### PDF 统一输出到 tmp_pdf
 
-`F:\.tools\textab` 下所有 `.tex` 编译后，PDF 会自动落到 `F:\.tools\textab\tmp_pdf`，而不是 `.tex` 旁边；论文（`F:\project\...`）仍原地出 PDF，不受影响。
+`F:\.project\07textab` 下所有 `.tex` 编译后，PDF 会自动落到 `F:\.project\07textab\tmp_pdf`，而不是 `.tex` 旁边；论文（`F:\project\...`）用工作区默认 latexmk 原地出 PDF，不受影响。
 
-实现是「条件路由」，两个文件配合：
-
-1. `f:\.vscode\settings.json` 里 `xelatexmk` / `lualatexmk` 两个 latexmk 工具加了 `-r "F:/.tools/textab/.latexmkrc"`，让每次 latexmk 编译都加载这个 rc 文件。
-2. `F:\.tools\textab\.latexmkrc` 判断「当前编译目录」（= 被编译 `.tex` 所在目录）是否在 textab 树下：是则把 `$out_dir` 设为 tmp_pdf，否则什么都不做。
-
-```perl
-use Cwd;
-my $cwd = Cwd::cwd();
-if ($cwd =~ /F:[\/\\]\.tools[\/\\]textab([\/\\]|$)/i) {
-    $out_dir = 'F:/.tools/textab/tmp_pdf';
-}
-```
+实现靠 textab 目录自带的 `.vscode/settings.json`：`outDir` 指向 `tmp_pdf`，`xelatex-to-tmppdf` recipe 用 `-output-directory` 把 PDF 直接写进 `tmp_pdf`；`.latexmkrc`（可选）作条件路由兜底。
 
 结果：PDF（连同 `.synctex.gz`）落到 `tmp_pdf`；aux/log/xdv 等中间文件仍在各 `.tex` 旁的 `build/` 子目录。
 

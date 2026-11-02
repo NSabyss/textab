@@ -32,7 +32,7 @@ pip install -r config/requirements.txt
 把仓库放到本地后，把 `ado/` 目录加入 Stata 搜索路径即可（`textab` 会自动定位 `code_py/` 与 `templates/`，并识别 Python，无需手动配置）：
 
 ```stata
-adopath + "F:/.tools/textab/ado"   // 换成你的实际路径
+adopath + "F:/.project/07textab/ado"   // 换成你的实际路径
 ```
 
 检查依赖（自动检测 esttab、Python、jinja2 是否就位）：

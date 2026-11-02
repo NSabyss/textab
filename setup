@@ -46,7 +46,7 @@
 <a id="sec-1-3"></a>
 ## 【3】具体实现方法
 ### 第一步：整理文件结构
-    root(根目录示例F:\\.tools\textab)
+    root(根目录示例F:\\.project\\07textab)
     │
     ├── setup                   # 安装说明
     ├── .latexmkrc              # latexmk 编译路由（PDF 统一输出到 tmp_pdf/）
@@ -86,9 +86,9 @@
 
 #### （2）模板文件结构
     模板文件储存路径：
-        F:\.tools\textab\templates
+        F:\.project\07textab\templates
     导言区：
-        F:\.tools\textab\templates\_preamble.tex
+        F:\.project\07textab\templates\_preamble.tex
     使用说明：
         表格分成两部分：body 片段（01~06_*.tex，具体表格骨架）+ 共享导言区（_preamble.tex，\documentclass 与宏包）。
         6 个 body 模板对应不同表格类型（三线表 / 变量定义 / 回归 / 多面板 / 横向宽表 / 跨行分组），导言区共用一份。
@@ -183,7 +183,7 @@ PDF 统一输出到 tmp_pdf/ 目录（靠 .latexmkrc 条件路由），中间文
 
 仓库地址：https://github.com/NSabyss/textab
 
-本地改完代码后，在 `F:\.tools\textab` 目录下，走三步：
+本地改完代码后，在 `F:\.project\07textab` 目录下，走三步：
 
 【1】暂存改动
 
